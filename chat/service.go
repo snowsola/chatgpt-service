@@ -220,7 +220,10 @@ func (api *Api) WsChat(c *gin.Context) {
 	}()
 
 	api.Logger.LogInfo(fmt.Sprintf("websocket connection open"))
-	cli := openai.NewClient(api.Config.AppKey)
+	clientConfig := openai.DefaultConfig(api.Config.AppKey)
+	clientConfig.BaseURL = api.Config.BaseUrl
+
+	cli := openai.NewClientWithConfig(clientConfig)
 
 	var latestRequestTime time.Time
 	for {
@@ -240,6 +243,9 @@ func (api *Api) WsChat(c *gin.Context) {
 			api.Logger.LogInfo(fmt.Sprintf("[REQUEST] %s", requestMsg))
 			var ok bool
 			if latestRequestTime.IsZero() {
+				if requestMsg != "start chatGPT" {
+					_ = conn.Close()
+				}
 				latestRequestTime = time.Now()
 				ok = true
 			} else {
